@@ -4,10 +4,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define ZERO_FLAG_MASK (1 << 0b00000001)
-#define CARRY_FLAG_MASK (1 << 0b00000010)
-#define OVERFLOW_FLAG_MASK (1 << 0b00000100)
-#define SIGN_FLAG_MASK (1 << 0b00001000)
+#define ZERO_FLAG_MASK (1 << 1)
+#define CARRY_FLAG_MASK (1 << 2)
+#define OVERFLOW_FLAG_MASK (1 << 4)
+#define SIGN_FLAG_MASK (1 << 8)
 
 typedef uint8_t byte;
 typedef uint16_t word;
@@ -75,20 +75,49 @@ void cpu_print(cpu_t* cpu) {
     printf("r4: %d\n", cpu->r4);
 }
 
+void mov_rxi(cpu_t* cpu, int* cycles, byte* reg) {
+    byte value = cpu_fetch_byte(cpu, cycles);
+    *reg = value;
+    *cycles -= 1;
+}
+
 void cpu_exec(cpu_t* cpu, int cycles, bool print_step) {
     while (cycles > 0) {
-        byte instruction = cpu_fetch_byte(cpu, &cycles);
         if (print_step)
             cpu_print(cpu);
-            printf("current byte about to run: 0x%02x\n", instruction);
+        byte instruction = cpu_fetch_byte(cpu, &cycles);
+        printf("current byte to run: 0x%02x\n", instruction);
         switch (instruction) {
-        case 0x00:                   // NOP
+        case 0x00:  // NOP
             cycles -= 1;
             printf("nop\n");
             break;
-        case 0x10:
-            byte value = cpu_fetch_byte(cpu, &cycles);
-            cpu->r1 = value;
+        case 0x10:  // MOVR1I
+            mov_rxi(cpu, &cycles, &(cpu->r1));
+            break;
+        case 0x15:  // JMP
+            cpu->pc = cpu->ra;
+            cycles -= 1;
+            break;
+        case 0x1b:  // FLAG
+            byte flags = cpu->flags;
+            cpu->ra = flags;
+            cycles -= 1;
+            break;
+        case 0x20:  // MOVR2I
+            mov_rxi(cpu, &cycles, &(cpu->r2));
+            break;
+        case 0x30:  // MOVR3I
+            mov_rxi(cpu, &cycles, &(cpu->r3));
+            break;
+        case 0x40:  // MOVR4I
+            mov_rxi(cpu, &cycles, &(cpu->r4));
+            break;
+        case 0x50:  // MOVRAI
+            mov_rxi(cpu, &cycles, &(cpu->ra));
+            break;
+        case 0x60:  // MOVRBI
+            mov_rxi(cpu, &cycles, &(cpu->rb));
             break;
         default:
             printf("unhandled instruction!\n");
@@ -105,11 +134,25 @@ int main(void) {
     mem_t mem;
 
     mem_init(&mem);
-    mem_write_byte(&mem, 0x0000, 0x10);
+    mem_write_byte(&mem, 0x0000, 0x50);
     mem_write_byte(&mem, 0x0001, 69);
+    mem_write_byte(&mem, 0x0002, 0x15);
+
+    mem_write_byte(&mem, 0x0045, 0x10);
+    mem_write_byte(&mem, 0x0046, 5);
+    mem_write_byte(&mem, 0x0047, 0x20);
+    mem_write_byte(&mem, 0x0048, 3);
+    mem_write_byte(&mem, 0x0049, 0x30);
+    mem_write_byte(&mem, 0x004a, 9);
+    mem_write_byte(&mem, 0x004b, 0x40);
+    mem_write_byte(&mem, 0x004c, 5);
+    mem_write_byte(&mem, 0x004d, 0x60);
+    mem_write_byte(&mem, 0x004e, 2);
+
     cpu_reset(&cpu, &mem);
     
-    cpu_exec(&cpu, 5, true);
+    cpu_exec(&cpu, 13, false);
+    printf("%d", cpu.pc);
 
     return 0;
 }
