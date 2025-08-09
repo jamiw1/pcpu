@@ -81,6 +81,40 @@ void mov_rxi(cpu_t* cpu, int* cycles, byte* reg) {
     *cycles -= 1;
 }
 
+void mov_rxr(cpu_t* cpu, int* cycles, byte* reg) {
+    byte new_reg = cpu_fetch_byte(cpu, cycles);
+    switch (new_reg) {
+    case 0x00: // pc into reg
+        *reg = cpu->pc;
+        break;
+    case 0x01: // r1 into reg
+        *reg = cpu->r1;
+        break;
+    case 0x02: // r2 into reg
+        *reg = cpu->r2;
+        break;
+    case 0x03: // r3 into reg
+        *reg = cpu->r3;
+        break;
+    case 0x04: // r4 into reg
+        *reg = cpu->r4;
+        break;
+    case 0x05: // ra into reg
+        *reg = cpu->ra;
+        break;
+    case 0x06: // rb into reg
+        *reg = cpu->rb;
+        break;
+    case 0x07: // sp into reg
+        *reg = cpu->sp;
+        break;
+    default:
+        printf("ultimate fail reg %d isn't valid\n", reg);
+        break;
+    }
+    *cycles -= 1;
+}
+
 void cpu_exec(cpu_t* cpu, int cycles, bool print_step) {
     while (cycles > 0) {
         if (print_step)
@@ -95,6 +129,9 @@ void cpu_exec(cpu_t* cpu, int cycles, bool print_step) {
         case 0x10:  // MOVR1I
             mov_rxi(cpu, &cycles, &(cpu->r1));
             break;
+        case 0x11: // MOVR1R
+            mov_rxr(cpu, &cycles, &(cpu->r1));
+            break;
         case 0x15:  // JMP
             cpu->pc = cpu->ra;
             cycles -= 1;
@@ -107,20 +144,35 @@ void cpu_exec(cpu_t* cpu, int cycles, bool print_step) {
         case 0x20:  // MOVR2I
             mov_rxi(cpu, &cycles, &(cpu->r2));
             break;
+        case 0x21:  // MOVR2R
+            mov_rxr(cpu, &cycles, &(cpu->r2));
+            break;
         case 0x30:  // MOVR3I
             mov_rxi(cpu, &cycles, &(cpu->r3));
+            break;
+        case 0x31:  // MOVR3R
+            mov_rxr(cpu, &cycles, &(cpu->r3));
             break;
         case 0x40:  // MOVR4I
             mov_rxi(cpu, &cycles, &(cpu->r4));
             break;
+        case 0x41:  // MOVR4R
+            mov_rxr(cpu, &cycles, &(cpu->r4));
+            break;
         case 0x50:  // MOVRAI
             mov_rxi(cpu, &cycles, &(cpu->ra));
+            break;
+        case 0x51:  // MOVRAR
+            mov_rxr(cpu, &cycles, &(cpu->ra));
             break;
         case 0x60:  // MOVRBI
             mov_rxi(cpu, &cycles, &(cpu->rb));
             break;
+        case 0x61:  // MOVRBR
+            mov_rxr(cpu, &cycles, &(cpu->rb));
+            break;
         default:
-            printf("unhandled instruction!\n");
+            printf("unhandled instruction! treating as NOP\n");
             cycles -= 1;
             break;
         }
