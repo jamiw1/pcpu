@@ -1,8 +1,9 @@
+files = src/main.c src/cpu.c src/mem.c
+
 all: run
 
 run: build
 	./build/main
 
-build: src/main.c
-	mkdir build
-	gcc src/main.c -o build/main.exe
+build: $(files)
+	gcc $(files) -o build/main
